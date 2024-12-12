@@ -8,6 +8,8 @@
 #include <sys/wait.h>
 #include <cstdlib>
 #include <cerrno>
+#include <libgen.h>
+
 
 // Function to set the process name using prctl
 bool set_process_name(const char* name) {
@@ -66,7 +68,16 @@ int main(int argc, char* argv[]) {
             exit(EXIT_FAILURE);
         }
 
-        std::string preload_path = std::string("LD_PRELOAD=") + cwd + "/setname.so";
+        char exe_path[1024];
+        ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
+        if (len == -1) {
+            perror("readlink");
+            return EXIT_FAILURE;
+        }
+        exe_path[len] = '\0';
+        std::string wrapper_dir = dirname(exe_path);
+        std::string preload_path = std::string("LD_PRELOAD=") + wrapper_dir + "/setname.so";
+        //std::string preload_path = std::string("LD_PRELOAD=") + cwd + "/setname.so";
 
         // Prepare the new environment variables
         // It's safer to inherit the existing environment and append LD_PRELOAD
