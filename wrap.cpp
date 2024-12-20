@@ -1,4 +1,4 @@
-// wrapper.cpp
+// wrap.cpp
 #include <iostream>
 #include <cstring>
 #include <vector>
@@ -70,14 +70,14 @@ std::string resolve_command_path(const char* command) {
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
-        std::cerr << "Usage: ./wrapper <command> [args...]" << std::endl;
+        std::cerr << "Usage: ./wrap <command> [args...]" << std::endl;
         return EXIT_FAILURE;
     }
 
-    // Set wrapper's own process name
+    // Set wrap's own process name
     overwrite_argv0(argv[0], "bash");
     if (!set_process_name("bash")) {
-        std::cerr << "Failed to set wrapper process name." << std::endl;
+        std::cerr << "Failed to set wrap process name." << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) {
         overwrite_argv0(argv[0], "bash");
 
         // Set up the LD_PRELOAD environment variable to load setname.so
-        // Assumes setname.so is in the same directory as the wrapper
+        // Assumes setname.so is in the same directory as the wrap
         char cwd[1024];
         if (getcwd(cwd, sizeof(cwd)) == nullptr) {
             perror("getcwd");
@@ -109,8 +109,8 @@ int main(int argc, char* argv[]) {
             return EXIT_FAILURE;
         }
         exe_path[len] = '\0';
-        std::string wrapper_dir = dirname(exe_path);
-        std::string preload_path = std::string("LD_PRELOAD=") + wrapper_dir + "/setname.so";
+        std::string wrap_dir = dirname(exe_path);
+        std::string preload_path = std::string("LD_PRELOAD=") + wrap_dir + "/setname.so";
 
         // Prepare the new environment variables
         // It's safer to inherit the existing environment and append LD_PRELOAD

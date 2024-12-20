@@ -14,5 +14,5 @@ export PATH=/to/this/path:$PATH
 Usage:
 
 ```
-wrapper <command> [args...]
+wrap <command> [args...]
 ```
