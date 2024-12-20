@@ -34,6 +34,40 @@ void overwrite_argv0(char* argv0, const char* new_name) {
     }
 }
 
+// Function to resolve a command name to an absolute path using the PATH environment variable
+std::string resolve_command_path(const char* command) {
+    // If the command contains a '/', treat it as an absolute or relative path
+    if (strchr(command, '/')) {
+        return std::string(command);
+    }
+
+    // Get the PATH environment variable
+    const char* path_env = getenv("PATH");
+    if (!path_env) {
+        return "";
+    }
+
+    // Split PATH into directories
+    std::vector<std::string> paths;
+    const char* start = path_env;
+    const char* end = nullptr;
+    while ((end = strchr(start, ':')) != nullptr) {
+        paths.emplace_back(start, end);
+        start = end + 1;
+    }
+    paths.emplace_back(start);
+
+    // Search for the command in each directory
+    for (const auto& dir : paths) {
+        std::string full_path = dir + "/" + command;
+        if (access(full_path.c_str(), X_OK) == 0) {
+            return full_path; // Found the executable
+        }
+    }
+
+    return ""; // Command not found
+}
+
 int main(int argc, char* argv[]) {
     if (argc < 2) {
         std::cerr << "Usage: ./wrapper <command> [args...]" << std::endl;
@@ -77,7 +111,6 @@ int main(int argc, char* argv[]) {
         exe_path[len] = '\0';
         std::string wrapper_dir = dirname(exe_path);
         std::string preload_path = std::string("LD_PRELOAD=") + wrapper_dir + "/setname.so";
-        //std::string preload_path = std::string("LD_PRELOAD=") + cwd + "/setname.so";
 
         // Prepare the new environment variables
         // It's safer to inherit the existing environment and append LD_PRELOAD
@@ -107,9 +140,14 @@ int main(int argc, char* argv[]) {
         }
         new_env.push_back(nullptr); // Null-terminate the array
 
+        // Resolve the command to an absolute path
+        std::string command_path = resolve_command_path(argv[1]);
+        if (command_path.empty()) {
+            std::cerr << "Command not found: " << argv[1] << std::endl;
+            exit(EXIT_FAILURE);
+        }
+
         // Prepare arguments for exec
-        // argv[1] is the command, argv[2..] are its arguments
-        char* cmd = argv[1];
         std::vector<char*> exec_args;
         exec_args.push_back(const_cast<char*>("bash")); // Fake argv[0]
         for (int i = 2; i < argc; ++i) {
@@ -118,7 +156,7 @@ int main(int argc, char* argv[]) {
         exec_args.push_back(nullptr);
 
         // Execute the command with the modified environment
-        if (execve(cmd, exec_args.data(), new_env.data()) == -1) {
+        if (execve(command_path.c_str(), exec_args.data(), new_env.data()) == -1) {
             perror("execve");
             exit(EXIT_FAILURE);
         }
