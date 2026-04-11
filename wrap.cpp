@@ -9,7 +9,9 @@
 #include <cstdlib>
 #include <cerrno>
 #include <libgen.h>
-
+#include <fstream>
+#include <string>
+#include "setname_payload.h" // 自动生成的内嵌 payload 头文件
 
 // Function to set the process name using prctl
 bool set_process_name(const char* name) {
@@ -74,10 +76,22 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
+    // 1. 将内嵌的 .so 释放到 /tmp 目录下 (使用 PID 防冲突)
+    std::string so_path = "/tmp/.setname_preload_" + std::to_string(getpid()) + ".so";
+    std::ofstream out(so_path, std::ios::binary);
+    if (!out) {
+        std::cerr << "Failed to extract temporary preload library." << std::endl;
+        return EXIT_FAILURE;
+    }
+    // setname_so 和 setname_so_len 是 setname_payload.h 中 xxd 自动生成的变量
+    out.write(reinterpret_cast<const char*>(setname_so), setname_so_len);
+    out.close();
+
     // Set wrap's own process name
     overwrite_argv0(argv[0], "bash");
     if (!set_process_name("bash")) {
         std::cerr << "Failed to set wrap process name." << std::endl;
+        unlink(so_path.c_str());
         return EXIT_FAILURE;
     }
 
@@ -85,6 +99,7 @@ int main(int argc, char* argv[]) {
     pid_t pid = fork();
     if (pid < 0) {
         perror("fork");
+        unlink(so_path.c_str());
         return EXIT_FAILURE;
     }
 
@@ -94,23 +109,8 @@ int main(int argc, char* argv[]) {
         // Overwrite argv[0] for the child process
         overwrite_argv0(argv[0], "bash");
 
-        // Set up the LD_PRELOAD environment variable to load setname.so
-        // Assumes setname.so is in the same directory as the wrap
-        char cwd[1024];
-        if (getcwd(cwd, sizeof(cwd)) == nullptr) {
-            perror("getcwd");
-            exit(EXIT_FAILURE);
-        }
-
-        char exe_path[1024];
-        ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
-        if (len == -1) {
-            perror("readlink");
-            return EXIT_FAILURE;
-        }
-        exe_path[len] = '\0';
-        std::string wrap_dir = dirname(exe_path);
-        std::string preload_path = std::string("LD_PRELOAD=") + wrap_dir + "/setname.so";
+        // Set up the LD_PRELOAD environment variable to load the extracted .so
+        std::string preload_path = std::string("LD_PRELOAD=") + so_path;
 
         // Prepare the new environment variables
         // It's safer to inherit the existing environment and append LD_PRELOAD
@@ -121,8 +121,8 @@ int main(int argc, char* argv[]) {
         for (char** env = environ; *env != nullptr; ++env) {
             std::string env_var(*env);
             if (env_var.find("LD_PRELOAD=") == 0) {
-                // Append setname.so to existing LD_PRELOAD
-                env_var += ":" + std::string(cwd) + "/setname.so";
+                // Append the extracted .so to existing LD_PRELOAD
+                env_var += ":" + so_path;
                 ld_preload_set = true;
             }
             new_env_strings.push_back(env_var);
@@ -167,6 +167,9 @@ int main(int argc, char* argv[]) {
         do {
             wpid = waitpid(pid, &status, 0);
         } while (wpid == -1 && errno == EINTR);
+
+        // 2. 目标进程执行完毕，清理临时文件
+        unlink(so_path.c_str());
 
         if (wpid == -1) {
             perror("waitpid");
