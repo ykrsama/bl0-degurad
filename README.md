@@ -7,8 +7,8 @@ Build:
 ```bash
 source /cvmfs/sft.cern.ch/lcg/views/LCG_102/x86_64-centos7-gcc11-opt/setup.sh
 # or any other environment with gcc version > 8
-. compile.sh
-export PATH=/to/this/path:$PATH
+./compile.sh
+export PATH="${PWD}:${PATH}"
 ```
 
 Usage:
