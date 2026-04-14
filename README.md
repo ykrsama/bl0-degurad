@@ -14,11 +14,11 @@ export PATH="${PWD}/bin:${PATH}"
 Usage:
 
 ```bash
-./wrap <command> [args...]
+wrap <command> [args...]
 ```
 
 Example:
 
 ```bash
-./wrap python3 -c 'print("Cluster Guard Bypassed!")'
+wrap python3 -c 'print("Cluster Guard Bypassed!")'
 ```
