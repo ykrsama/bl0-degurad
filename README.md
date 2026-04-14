@@ -20,5 +20,5 @@ Usage:
 Example:
 
 ```bash
-./wrap python3 -c 'print("Hello World!")'
+./wrap python3 -c 'print("Cluster Guard Bypassed!")'
 ```
