@@ -21,5 +21,5 @@ rm setname.so setname_payload.h
 echo "==================================="
 echo "Done."
 echo "You can run wrap on any ${ARCH} Linux"
-echo "Usage: ./wrap <absolute_binary_path> [args...]"
-echo "Example: ./wrap \"\$(command -v python3)\" -c 'print(\"Hello World!\")'"
+echo "Usage: ./wrap <command> [args...]"
+echo "Example: ./wrap python3 -c 'print(\"Hello World!\")'"

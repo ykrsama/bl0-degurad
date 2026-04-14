@@ -14,11 +14,11 @@ export PATH=/to/this/path:$PATH
 Usage:
 
 ```bash
-./wrap <absolute_binary_path> [args...]
+./wrap <command> [args...]
 ```
 
 Example:
 
 ```bash
-./wrap "$(command -v python3)" -c 'print("Hello World!")'
+./wrap python3 -c 'print("Hello World!")'
 ```
