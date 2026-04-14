@@ -72,7 +72,7 @@ std::string resolve_command_path(const char* command) {
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
-        std::cerr << "Usage: ./wrap <command> [args...]" << std::endl;
+        std::cerr << "Usage: wrap <command> [args...]" << std::endl;
         return EXIT_FAILURE;
     }
 

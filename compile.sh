@@ -35,8 +35,10 @@ g++ -fPIC -shared -static-libstdc++ -static-libgcc -o setname.so setname.cpp
 echo -e "${BLUE}Converting setname.so into C++ header payload...${NC}"
 xxd -i setname.so > setname_payload.h
 
+mkdir -p bin
+
 echo -e "${BLUE}Building wrap (static)...${NC}"
-g++ -static -o wrap wrap.cpp
+g++ -static -o bin/wrap wrap.cpp
 
 echo -e "${BLUE}[Cleanup]${NC}"
 rm setname.so setname_payload.h
@@ -44,10 +46,24 @@ rm setname.so setname_payload.h
 echo -e "${GREEN}Done.${NC}"
 echo -e "\nYou can run wrap on any ${ARCH} Linux."
 
-echo -e "\n${YELLOW}To run 'wrap' from any directory, add this folder to your PATH:${NC}"
-echo -e "echo 'export PATH=\"\$PWD:\$PATH\"' >> ~/.bashrc && source ~/.bashrc"
+# --- AUTO-UPDATE .bashrc ---
+BASHRC_FILE="$HOME/.bashrc"
+EXPORT_LINE="export PATH=\"${PWD}/bin:\$PATH\""
 
-echo -e "${YELLOW}Usage:${NC}"
+# 使用 grep -Fxq 进行整行严格匹配，且静默输出
+if grep -Fxq "$EXPORT_LINE" "$BASHRC_FILE"; then
+    echo -e "${GREEN}✔ PATH is already configured in ~/.bashrc.${NC}"
+else
+    echo -e "${YELLOW}Adding bin/ directory to ~/.bashrc PATH...${NC}"
+    # 追加前先加个空行，防止跟文件末尾的内容粘连
+    echo "" >> "$BASHRC_FILE"
+    echo "# Added by wrap build script" >> "$BASHRC_FILE"
+    echo "$EXPORT_LINE" >> "$BASHRC_FILE"
+    echo -e "${GREEN}✔ Successfully added to ~/.bashrc.${NC}"
+    echo -e "${YELLOW}Run 'source ~/.bashrc' or restart your terminal to apply the changes.${NC}"
+fi
+
+echo -e "\n${YELLOW}Usage:${NC}"
 echo -e "wrap <command> [args...]"
 echo -e "${YELLOW}Example:${NC}"
 echo -e "wrap python3 -c 'print(\"Cluster Guard Bypassed!\")'"
