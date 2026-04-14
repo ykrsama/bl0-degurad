@@ -1,8 +1,8 @@
 # Bypass cpu time wall on bl-0 login node!
 
-## Usage
+The binary is statically compiled, can be used in any Linux including container.
 
-Setup:
+Build:
 
 ```bash
 source /cvmfs/sft.cern.ch/lcg/views/LCG_102/x86_64-centos7-gcc11-opt/setup.sh
@@ -13,6 +13,12 @@ export PATH=/to/this/path:$PATH
 
 Usage:
 
+```bash
+./wrap <absolute_binary_path> [args...]
 ```
-wrap <command> [args...]
+
+Example:
+
+```bash
+./wrap "$(command -v python3)" -c 'print("Hello World!")'
 ```

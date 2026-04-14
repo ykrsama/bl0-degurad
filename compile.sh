@@ -1,21 +1,25 @@
 #!/bin/bash
-set -e
+RAW_ARCH=$(uname -m)
+case ${RAW_ARCH} in
+    x86_64)  ARCH="x64" ;;
+    aarch64) ARCH="ARM64" ;;
+    *)       ARCH=${RAW_ARCH} ;;
+esac
 
-echo "[1/3] 正在编译独立的 setname.so (剥离 C++ 动态库依赖)..."
-# 将 C++ 运行时静态打入，确保 .so 不依赖 CVMFS 下的高版本库
+echo "Building setname.so (static)"
 g++ -fPIC -shared -static-libstdc++ -static-libgcc -o setname.so setname.cpp
 
-echo "[2/3] 正在将 setname.so 转换为 C++ 头文件 payload..."
-# xxd 会根据文件名生成 setname_so 数组和 setname_so_len 长度变量
+echo "Convertint setname.so into C++ hearder payload"
 xxd -i setname.so > setname_payload.h
 
-echo "[3/3] 正在编译完全静态的单文件启动器 wrap..."
-# -static 保证最终二进制没有任何动态依赖 (not a dynamic executable)
+echo "Building wrap (static)"
 g++ -static -o wrap wrap.cpp
 
-echo "[Cleanup] 清理临时中间文件..."
+echo "[Cleanup]"
 rm setname.so setname_payload.h
 
 echo "==================================="
-echo "✅ 编译完成！"
-echo "现在你只需要 'wrap' 这一个文件，它可以脱离环境在任意 x86_64 Linux 机器上独立运行。"
+echo "Done."
+echo "You can run wrap on any ${ARCH} Linux"
+echo "Usage: ./wrap <absolute_binary_path> [args...]"
+echo "Example: ./wrap \"\$(command -v python3)\" -c 'print(\"Hello World!\")'"
